@@ -53,7 +53,7 @@ class MqttUtils {
     }
     subscribe(MQTTTopic.response_token, callBack: new MqttCallBack());
     String jsonString = "{\"device_id\":\"${MQTTTopic.device_id}\",\"name\":\"test_name\"}";
-    publishMessage(MQTTTopic.request_token, jsonString,
+    publishMessage(MQTTTopic.response_token, jsonString,
         qualityOfService: MqttQos.atMostOnce);
   }
 
@@ -81,7 +81,7 @@ class MqttUtils {
       context.usePrivateKey(clientKeyPath);
     } on Exception catch (e) {
       //出现异常 尝试删除本地证书然后重新写入证书
-      log("SecurityContext set  error : " + e.toString());
+      print("SecurityContext set  error : " + e.toString());
       return -1;
     }
     _client.securityContext = context;
@@ -190,10 +190,10 @@ class MqttUtils {
   Future<String> _getLocalFile(String filename, String certContent,
       {bool deleteExist: false}) async {
     String dir = (await getApplicationDocumentsDirectory()).path;
-    log('dir = $dir');
+    print('dir = $dir');
     File file = new File('$dir/$filename');
     bool exist = await file.exists();
-    log('exist = $exist');
+    print('exist = $exist');
     if (deleteExist) {
       if (exist) {
         file.deleteSync();
@@ -201,7 +201,7 @@ class MqttUtils {
       exist = false;
     }
     if (!exist) {
-      log("MqttUtils: start write cert in local");
+      print("MqttUtils: start write cert in local");
       await file.writeAsString(certContent);
     }
     return file.path;
