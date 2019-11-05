@@ -187,22 +187,22 @@ class MqttUtils {
   }
 
   /// 获取证书的本地路径
-  Future<String> _getLocalFile(String filename,
+  Future<String> _getLocalFile(String filename, String certContent,
       {bool deleteExist: false}) async {
     String dir = (await getApplicationDocumentsDirectory()).path;
-    print('dir = $dir');
+    log('dir = $dir');
     File file = new File('$dir/$filename');
     bool exist = await file.exists();
-    print('exist = $exist');
+    log('exist = $exist');
     if (deleteExist) {
       if (exist) {
         file.deleteSync();
-      } 
+      }
       exist = false;
     }
     if (!exist) {
-      print("MqttUtils: start write cert in local");
-      await file.writeAsString(mqtt_cert);
+      log("MqttUtils: start write cert in local");
+      await file.writeAsString(certContent);
     }
     return file.path;
   }
