@@ -67,13 +67,21 @@ class MqttUtils {
     /// 安全认证
     _client.secure = true;
     final SecurityContext context = SecurityContext.defaultContext;
+    
+    String caPath =
+        await _getLocalFile("ca.pem", cert_ca, deleteExist: deleteExist);
+    String clientKeyPath = await _getLocalFile("clientkey.pem", cert_client_key,
+        deleteExist: deleteExist);
+    String clientCrtPath = await _getLocalFile("client.pem", cert_client_crt,
+        deleteExist: deleteExist);
+
     try {
-      String crtPath = await _getLocalFile("cert", deleteExist: deleteExist);
-      context.setTrustedCertificates(crtPath);
+      context.setTrustedCertificates(caPath);
+      context.useCertificateChain(clientCrtPath);
+      context.usePrivateKey(clientKeyPath);
     } on Exception catch (e) {
       //出现异常 尝试删除本地证书然后重新写入证书
-      print("setTrustedCertificates error : " + e.toString());
-      print("setTrustedCertificates error and return -1");
+      log("SecurityContext set  error : " + e.toString());
       return -1;
     }
     _client.securityContext = context;
@@ -174,6 +182,7 @@ class MqttUtils {
   void disconnect() {
     print('MqttUtils::Disconnecting');
     _client.disconnect();
+     _client.securityContext = null;
     _topicCallBackMap.clear();
   }
 
@@ -188,9 +197,8 @@ class MqttUtils {
     if (deleteExist) {
       if (exist) {
         file.deleteSync();
-      } else {
-        exist = false;
-      }
+      } 
+      exist = false;
     }
     if (!exist) {
       print("MqttUtils: start write cert in local");
