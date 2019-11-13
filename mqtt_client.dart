@@ -27,6 +27,18 @@ int _port = 8883;
 ///超时时间 s
 int _keepAlive = 60;
 
+///是否连接上
+bool _connected = false;
+
+///是否初始化完成
+bool _inited = false;
+
+///每次+5  5，10，15，
+int _recontectTimeAdd = 5;
+
+///重连间隔 初始5s 每次重连递增 5s
+int _recontectDelay = 5;
+
 MqttClient _client = MqttClient.withPort(_server, "", _port);
 
 class MqttUtils {
@@ -91,6 +103,7 @@ class MqttUtils {
 
     _client.pongCallback  = ping;
 
+    _inited = true;
     return 0;
   }
 
@@ -111,6 +124,7 @@ class MqttUtils {
     // 检查连接的状态
     if (_client.connectionStatus.state == MqttConnectionState.connected) {
       print('MqttUtils::$_server client connected');
+      _connected = true;
     } else {
       print('MqttUtils::ERROR $_server client connection failed - disconnecting, status is ${_client.connectionStatus}');
       _client.disconnect();
@@ -140,64 +154,62 @@ class MqttUtils {
   }
 
   /// 发送消息  qualityOfService：对应接口文档的 qos 参数
-  void publishMessage(String topic, String jsonString,
+  bool publishMessage(String topic, String jsonString,
       {bool retain = false, MqttQos qualityOfService = MqttQos.atMostOnce}) {
     print('MqttUtils::publishMessage topic = $topic, MqttQos = $qualityOfService, '
         'jsonString = $jsonString');
+    
+    if (!isConnected()) {
+      print('MqttUtils::publishMessage topic = $topic---- client is not conntected');
+      return false;
+    }
+    
     final MqttClientPayloadBuilder builder = MqttClientPayloadBuilder();
     builder.addString(jsonString);
     _client.publishMessage(topic, qualityOfService, builder.payload,
         retain: retain);
+    return true;
   }
 
   /// 订阅消息
-  void subscribe(String topic,
+  bool subscribe(String topic,
       {MqttQos qosLevel = MqttQos.atMostOnce, IMqttCallBack callBack}) {
     print('MqttUtils::subscribe topic = $topic , qosLevel = $qosLevel,'
         'callBack = $callBack');
+    
+    if (!isConnected()) {
+      print('MqttUtils::subscribe  topic = $topic ---- client is not conntected');
+      return false;
+    }
+    
     if (callBack != null) {
       _topicCallBackMap.addAll({topic: callBack});
       print("_topicCallBackMap subscribe put  key = $topic, callBack = ${callBack == null ? null : callBack.toString()}");
     }
     _client.subscribe(topic, qosLevel);
+    return true;
   }
 
   ///取消订阅
-  void unsubscribe(String topic) {
+  bool unsubscribe(String topic) {
     print('MqttUtils::Unsubscribing' + topic);
+    if (!isConnected()) {
+      print('MqttUtils::Unsubscribing  topic = $topic---- client is not conntected');
+      return false;
+    }
     _client.unsubscribe(topic);
     if (_topicCallBackMap.containsKey(topic)) {
       _topicCallBackMap.remove(topic);
     }
+    return true;
   }
 
   ///中断连接
   void disconnect() {
     print('MqttUtils::Disconnecting');
     _client.disconnect();
-     _client.securityContext = null;
+    _client.securityContext = null;
     _topicCallBackMap.clear();
-  }
-
-  /// 获取证书的本地路径
-  Future<String> _getLocalFile(String filename, String certContent,
-      {bool deleteExist: false}) async {
-    String dir = (await getApplicationDocumentsDirectory()).path;
-    print('dir = $dir');
-    File file = new File('$dir/$filename');
-    bool exist = await file.exists();
-    print('exist = $exist');
-    if (deleteExist) {
-      if (exist) {
-        file.deleteSync();
-      }
-      exist = false;
-    }
-    if (!exist) {
-      print("MqttUtils: start write cert in local");
-      await file.writeAsString(certContent);
-    }
-    return file.path;
   }
 }
 
@@ -214,11 +226,25 @@ void onSubscribed(String topic) {
 //断开连接的回调
 void onDisconnected() {
   print('MqttUtils::OnDisconnected client callback - Client disconnection');
+  _connected = false;
   if (_client.connectionStatus.returnCode == MqttConnectReturnCode.solicited) {
     print('MqttUtils::OnDisconnected callback is solicited, this is correct');
   }
+  
+  if (_canReConnected()) {
+    await Future.delayed(Duration(seconds: _recontectDelay));
+    _recontectDelay += _recontectTimeAdd;
+    print("mqtt start reConntect");
+    MqttUtils.getInstance().connect(MQTTTopic.device_id, MQTTTopic.device_uid);
+  }
   //退出程序
   //exit(-1);
+}
+
+bool _canReConnected() {
+  return _inited &&
+      MQTTTopic.device_id != null &&
+      MQTTTopic.device_id.length > 0;
 }
 
 void ping() {
