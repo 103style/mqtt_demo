@@ -5,7 +5,6 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:mqtt_client/mqtt_client.dart';
-import 'package:path_provider/path_provider.dart';
 
 import 'mqtt_topic.dart';
 import 'mqtt_cert.dart';
