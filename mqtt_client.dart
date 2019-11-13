@@ -70,7 +70,7 @@ class MqttUtils {
   }
 
   ///初始化配置mqtt
-  Future<int> init({bool deleteExist: false}) async {
+  Future<int> init() async {
     ///日志
     _client.logging(on: debug);
     //超时时间s  默认为60s
