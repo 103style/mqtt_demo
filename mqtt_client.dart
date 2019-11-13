@@ -1,6 +1,7 @@
 //示例 https://github.com/shamblett/mqtt_client/blob/master/example/iot_core.dart
 import 'dart:async';
 import 'dart:async' show Future;
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:mqtt_client/mqtt_client.dart';
@@ -224,7 +225,7 @@ void onSubscribed(String topic) {
 }
 
 //断开连接的回调
-void onDisconnected() {
+void onDisconnected() async{
   print('MqttUtils::OnDisconnected client callback - Client disconnection');
   _connected = false;
   if (_client.connectionStatus.returnCode == MqttConnectReturnCode.solicited) {
