@@ -67,20 +67,13 @@ class MqttUtils {
     /// 安全认证
     _client.secure = true;
     final SecurityContext context = SecurityContext.defaultContext;
-    
-    String caPath =
-        await _getLocalFile("ca.pem", cert_ca, deleteExist: deleteExist);
-    String clientKeyPath = await _getLocalFile("clientkey.pem", cert_client_key,
-        deleteExist: deleteExist);
-    String clientCrtPath = await _getLocalFile("client.pem", cert_client_crt,
-        deleteExist: deleteExist);
-
+   
     try {
-      context.setTrustedCertificates(caPath);
-      context.useCertificateChain(clientCrtPath);
-      context.usePrivateKey(clientKeyPath);
+      context.setTrustedCertificatesBytes(utf8.encode(cert_ca));
+      context.useCertificateChainBytes(utf8.encode(cert_client_crt));
+      context.usePrivateKeyBytes(utf8.encode(cert_client_key));
     } on Exception catch (e) {
-      //出现异常 尝试删除本地证书然后重新写入证书
+      //出现异常 证书配置错误
       print("SecurityContext set  error : " + e.toString());
       return -1;
     }
