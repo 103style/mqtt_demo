@@ -211,6 +211,10 @@ class MqttUtils {
     _client.securityContext = null;
     _topicCallBackMap.clear();
   }
+
+  bool isConnected() {
+    return _connected;
+  }
 }
 
 ///连接成功的回调
