@@ -1,7 +1,7 @@
 # mqtt_demo
 flutter mqtt demo
 
-doc : https://www.jianshu.com/p/4b639a527f75
+doc : https://juejin.im/post/6844903985460019213
 
 相关错误：
 ```
